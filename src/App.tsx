@@ -193,8 +193,8 @@ interface CarrierManagerProps {
 // ============================================================================
 
 const API_URL = "/api"; 
-// Auto-detect: use localStorage for localhost, server for production
-const USE_LOCAL_STORAGE: boolean = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+// Use localStorage for static hosting (Render, localhost, etc.) - set to false only if you have a backend API server
+const USE_LOCAL_STORAGE: boolean = true;
 
 // Feature flag: Set to true to disable authentication (for testing/migration)
 const DISABLE_AUTH: boolean = true; // Set to true to bypass password protection
@@ -1585,7 +1585,7 @@ const TONES: Record<ToneKey, ToneConfig> = {
     description: 'Direct and concise'
   },
   detailed: {
-    label: 'Detail-Oriented',
+    label: 'Standard +',
     color: '#e0e7ff',
     textColor: '#3730a3',
     borderColor: '#6366f1',
