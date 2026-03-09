@@ -4,7 +4,7 @@ import { QuoteBuilderFormProps, Vehicle } from '../types';
 import { JERRY_PINK, JERRY_BG, SLATE, BORDER, DEFAULT_QUOTE_SETTINGS } from '../constants';
 import { cleanHTML } from '../utils/helpers';
 
-const QuoteBuilderForm: React.FC<QuoteBuilderFormProps> = ({ closingQuestion, settings = DEFAULT_QUOTE_SETTINGS, carriers = {} }) => {
+const QuoteBuilderForm: React.FC<QuoteBuilderFormProps> = ({ closingQuestion, settings = DEFAULT_QUOTE_SETTINGS, carriers = {}, selectedTone = 'neutral' }) => {
   const [downPayment, setDownPayment] = useState<string>("");
   const [monthly, setMonthly] = useState<string>("");
   const [term, setTerm] = useState<string>("6-month");
@@ -30,8 +30,8 @@ const QuoteBuilderForm: React.FC<QuoteBuilderFormProps> = ({ closingQuestion, se
 
   const generateScript = () => {
     if (!downPayment || !monthly) return "<p><i>Enter pricing to generate script.</i></p>";
-    const joinList = (l) => l.length === 0 ? "" : l.length === 1 ? l[0] : l.length === 2 ? `${l[0]} and ${l[1]}` : `${l.slice(0, -1).join(", ")}, and ${l.slice(-1)}`;
-    const formatItem = (cId, val) => {
+    const joinList = (l: any[]) => l.length === 0 ? "" : l.length === 1 ? l[0] : l.length === 2 ? `${l[0]} and ${l[1]}` : `${l.slice(0, -1).join(", ")}, and ${l.slice(-1)}`;
+    const formatItem = (cId: string, val: string) => {
       const conf = settings.coverages.find(s => s.id === cId);
       if (!conf) return "";
       const fmt = conf.format || settings.coverageFormat || "{label} with {value}";
@@ -50,7 +50,17 @@ const QuoteBuilderForm: React.FC<QuoteBuilderFormProps> = ({ closingQuestion, se
 
     const carrierName = carriers[selectedCarrier]?.name || "our partner";
     const dSym = downPayment.includes('$') ? '' : '$'; const mSym = monthly.includes('$') ? '' : '$';
-    let script = settings.template;
+    
+    // NEW: Pull the appropriate tone template, fallback to default neutral
+    let baseTemplate = settings.template;
+    if (selectedTone && selectedTone !== 'neutral' && settings.toneTemplates?.[selectedTone]) {
+      // Only use the custom tone if the admin actually typed something into it
+      if (settings.toneTemplates[selectedTone].replace(/<[^>]*>/g, '').trim() !== '') {
+        baseTemplate = settings.toneTemplates[selectedTone];
+      }
+    }
+
+    let script = baseTemplate;
     script = script.replace("{carrier}", carrierName).replace("{policy}", policyString).replace("{vehicles}", vehiclesString);
     script = script.replace("{down}", `${dSym}${downPayment}`).replace("{monthly}", `${mSym}${monthly}`).replace("{term}", term);
     script = script.replace("{closing}", closingQuestion || "Did you want this policy to start effective today?");

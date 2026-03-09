@@ -37,7 +37,6 @@ export const DEFAULT_ISSUES: Issue[] = [
   { id: '3', title: 'Customer claims better price elsewhere', category: 'Sales', keywords: 'cheaper price better rate competition', solution: '<p><strong>Response:</strong></p><p>Ask what the other quote includes to ensure apples-to-apples comparison. Often our coverage is more comprehensive.</p><p>Highlight our service advantages and claim support.</p>' },
 ];
 
-
 export const DEFAULT_QUOTE_SETTINGS: QuoteSettings = {
   coverages: [
     { id: 'bi_pd', label: 'Bodily Injury Liability', hasInput: true, placeholder: 'e.g. 100/300', isPolicyLevel: true, format: "<b>{label}</b> at {value}" },
@@ -50,9 +49,13 @@ export const DEFAULT_QUOTE_SETTINGS: QuoteSettings = {
   ],
   coverageFormat: "<b>{label}</b> with {value}", 
   vehicleTemplate: "for {name}, we have {coverages}",
-  template: "<p>Excellent news, I found a great rate with <strong>{carrier}</strong>.</p><p>{policy}</p><p>Then {vehicles}.</p><p>I will get this started today for <strong>{down} down</strong> and <strong>{monthly} a month</strong>.</p><p>{closing}</p>"
+  template: "<p>Excellent news, I found a great rate with <strong>{carrier}</strong>.</p><p>{policy}</p><p>Then {vehicles}.</p><p>I will get this started today for <strong>{down} down</strong> and <strong>{monthly} a month</strong>.</p><p>{closing}</p>",
+  toneTemplates: {
+    fun: "<p>Woohoo! I found an amazing rate with <strong>{carrier}</strong>!</p><p>{policy}</p><p>Then {vehicles}.</p><p>Let's lock this in today for just <strong>{down} down</strong> and <strong>{monthly} a month</strong>!</p><p>{closing}</p>",
+    efficient: "<p>Your rate with <strong>{carrier}</strong> is ready.</p><p>{policy}. {vehicles}.</p><p>Total is <strong>{down} down</strong> and <strong>{monthly}/mo</strong>.</p><p>{closing}</p>",
+    detailed: "<p>I've secured a comprehensive policy with <strong>{carrier}</strong>.</p><p>{policy}</p><p>Furthermore, {vehicles}.</p><p>To activate this coverage today, it requires <strong>{down} down</strong> and <strong>{monthly} monthly</strong>.</p><p>{closing}</p>"
+  }
 };
-
 
 export const TONES: Record<ToneKey, ToneConfig> = {
   neutral: {
@@ -84,4 +87,3 @@ export const TONES: Record<ToneKey, ToneConfig> = {
     description: 'Thorough and comprehensive'
   }
 };
-

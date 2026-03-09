@@ -6,7 +6,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import 'react-quill-new/dist/quill.snow.css';   
 import 'react-quill-new/dist/quill.bubble.css'; 
-import { Plus, RefreshCw, ChevronRight, Trash2, Save, Building2, DollarSign, Settings, Copy, Layers, Lock, Unlock, Edit, FolderOpen, ClipboardCheck, FolderCog, FileText, GitBranch } from 'lucide-react';
+import { Plus, RefreshCw, ChevronRight, Trash2, Save, Building2, Lock, Unlock, DollarSign, Settings, Copy, Layers, Edit, FolderOpen, ClipboardCheck, FolderCog, FileText, GitBranch } from 'lucide-react';
 import './App.css';
 
 // @ts-ignore - image import
@@ -46,7 +46,7 @@ export default function App() {
   const [isCallTypesModalOpen, setCallTypesModalOpen] = useState(false);
 
   const auth = useAuth();
-  const wizard = useWizardNavigation(nodes, edges, carriers, callTypes);
+  const wizard = useWizardNavigation(nodes, edges, carriers, callTypes, selectedTone); // Passed selectedTone to hook
 
   // ── Node Management ──────────────────────────────────────────────────────
 
@@ -346,7 +346,6 @@ export default function App() {
                           <div style={{fontWeight:'bold', color:'#8b5cf6', fontSize:'15px'}}>{carriers[wizard.selectedCarrierId].name}</div>
                           <div style={{fontSize:'11px', background:'#8b5cf6', color:'white', padding:'4px 8px', borderRadius:'4px', fontWeight:'bold'}}>{safeCallType}</div>
                         </div>
-                        {/* 2. CRITICAL FIX: Use ?? instead of || so empty strings don't trigger the ghost script */}
                         <div style={{fontSize:'13px', color:SLATE}} dangerouslySetInnerHTML={{__html: carriers[wizard.selectedCarrierId].scripts?.[safeCallType] ?? carriers[wizard.selectedCarrierId].script ?? "<p><i>No script for this call type yet.</i></p>"}}></div>
                       </div>
                     )}
@@ -354,25 +353,32 @@ export default function App() {
                 );
               })()}
               {cn.type === 'checklistNode' && <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>{wizard.renderChecklistItems(cn.data.items, wizard.activeChecklistState[cn.id], cn.id, true)}</div>}
-              {cn.type === 'madLibsNode' && (
-                <div style={{display:'flex', flexDirection:'column', gap:'12px'}}>
-                  <div style={{background:'white', padding:'12px', borderRadius:'8px', border:'2px solid #10b981'}}>
-                    <div style={{fontSize:'11px', fontWeight:'bold', color:'#10b981', marginBottom:'8px', textTransform:'uppercase'}}>Preview:</div>
-                    <div style={{fontSize:'14px', color:SLATE, lineHeight:'1.6'}}>{fillTemplate(cn.data.template, wizard.madLibsValues[cn.id] || {})}</div>
+              {cn.type === 'madLibsNode' && (() => {
+                // Determine the correct template based on tone
+                const activeTemplate = (selectedTone !== 'neutral' && cn.data.toneTemplates?.[selectedTone]) 
+                  ? cn.data.toneTemplates[selectedTone] 
+                  : cn.data.template;
+
+                return (
+                  <div style={{display:'flex', flexDirection:'column', gap:'12px'}}>
+                    <div style={{background:'white', padding:'12px', borderRadius:'8px', border:'2px solid #10b981'}}>
+                      <div style={{fontSize:'11px', fontWeight:'bold', color:'#10b981', marginBottom:'8px', textTransform:'uppercase'}}>Preview:</div>
+                      <div style={{fontSize:'14px', color:SLATE, lineHeight:'1.6'}}>{fillTemplate(activeTemplate, wizard.madLibsValues[cn.id] || {})}</div>
+                    </div>
+                    <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+                      <div style={{fontSize:'11px', fontWeight:'bold', color:'#10b981', textTransform:'uppercase'}}>Fill in the blanks:</div>
+                      {extractVariables(activeTemplate).map((variable, idx) => (
+                        <div key={idx} style={{display:'flex', flexDirection:'column', gap:'4px'}}>
+                          <label style={{fontSize:'12px', fontWeight:'600', color:SLATE}}>{variable}:</label>
+                          <input type="text" value={wizard.madLibsValues[cn.id]?.[variable] || ''} onChange={(e) => wizard.updateMadLibsValue(cn.id, variable, e.target.value)} placeholder={`Enter ${variable}...`}
+                            style={{ padding:'10px', border:`1px solid ${BORDER}`, borderRadius:'6px', fontSize:'14px', width:'100%' }} />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
-                    <div style={{fontSize:'11px', fontWeight:'bold', color:'#10b981', textTransform:'uppercase'}}>Fill in the blanks:</div>
-                    {extractVariables(cn.data.template).map((variable, idx) => (
-                      <div key={idx} style={{display:'flex', flexDirection:'column', gap:'4px'}}>
-                        <label style={{fontSize:'12px', fontWeight:'600', color:SLATE}}>{variable}:</label>
-                        <input type="text" value={wizard.madLibsValues[cn.id]?.[variable] || ''} onChange={(e) => wizard.updateMadLibsValue(cn.id, variable, e.target.value)} placeholder={`Enter ${variable}...`}
-                          style={{ padding:'10px', border:`1px solid ${BORDER}`, borderRadius:'6px', fontSize:'14px', width:'100%' }} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {cn.type === 'quoteNode' && <QuoteBuilderForm closingQuestion={cn.data.closingQuestion} settings={quoteSettings} carriers={carriers} />}
+                );
+              })()}
+              {cn.type === 'quoteNode' && <QuoteBuilderForm closingQuestion={cn.data.closingQuestion} settings={quoteSettings} carriers={carriers} selectedTone={selectedTone} />}
             </div>
           )}
         </div>

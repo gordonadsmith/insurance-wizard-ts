@@ -14,6 +14,7 @@ export interface QuoteSettings {
   coverageFormat: string;
   vehicleTemplate: string;
   template: string;
+  toneTemplates?: Record<string, string>; 
 }
 
 export interface Carrier {
@@ -71,6 +72,7 @@ export interface BaseNodeData {
   closingQuestion?: string;
   items?: string;
   template?: string;
+  toneTemplates?: Record<string, string>; // NEW: Added for MadLibs Tone Support
   [key: string]: any;
 }
 
@@ -116,6 +118,7 @@ export interface QuoteBuilderFormProps {
   closingQuestion: string;
   settings?: QuoteSettings;
   carriers?: CarrierMap;
+  selectedTone?: string; 
 }
 
 export interface SettingsManagerProps {

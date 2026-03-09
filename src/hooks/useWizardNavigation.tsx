@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Node, Edge } from 'reactflow';
-import { HistoryEntry, CarrierMap } from '../types';
+import { HistoryEntry, CarrierMap, ToneKey } from '../types';
 import { BORDER, SLATE, COMPLIANCE_ORANGE } from '../constants';
 import { fillTemplate } from '../utils/helpers';
 import { useAutoScroll } from './useAutoScroll';
@@ -9,7 +9,8 @@ export const useWizardNavigation = (
   nodes: Node[],
   edges: Edge[],
   carriers: CarrierMap,
-  callTypes: string[]
+  callTypes: string[],
+  selectedTone: ToneKey // NEW: Need tone to determine which madLib text to save to history
 ) => {
   const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -80,9 +81,15 @@ export const useWizardNavigation = (
     if (currentNode.type === 'checklistNode') {
       historyData.checklistAnswers = activeChecklistState[currentNode.id] || {};
     }
+    
     if (currentNode.type === 'madLibsNode') {
+      // Dynamically select the correct template based on tone
+      const activeTemplate = (selectedTone !== 'neutral' && currentNode.data.toneTemplates?.[selectedTone]) 
+        ? currentNode.data.toneTemplates[selectedTone] 
+        : currentNode.data.template;
+
       historyData.madLibsData = {
-        filledText: fillTemplate(currentNode.data.template, madLibsValues[currentNode.id] || {}),
+        filledText: fillTemplate(activeTemplate, madLibsValues[currentNode.id] || {}),
         variables: madLibsValues[currentNode.id] || {}
       };
     }
@@ -92,7 +99,7 @@ export const useWizardNavigation = (
     setSelectedCarrierId(null);
     setSelectedCallType(""); // Clear state; the IIFE in App.tsx will auto-resolve the correct default
     triggerAutoScroll();
-  }, [currentNode, selectedCarrierId, selectedCallType, carriers, activeChecklistState, madLibsValues, triggerAutoScroll, callTypes]);
+  }, [currentNode, selectedCarrierId, selectedCallType, carriers, activeChecklistState, madLibsValues, triggerAutoScroll, callTypes, selectedTone]);
 
   const resetWizard = useCallback(() => {
     const start = nodes.find(n => n.data.isStart) || nodes.find(n => n.id === '1') || nodes[0];
