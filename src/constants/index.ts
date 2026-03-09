@@ -77,7 +77,7 @@ export const TONES: Record<ToneKey, ToneConfig> = {
     description: 'Direct and concise'
   },
   detailed: {
-    label: 'Detail-Oriented',
+    label: 'Standard +',
     color: '#e0e7ff',
     textColor: '#3730a3',
     borderColor: '#6366f1',
