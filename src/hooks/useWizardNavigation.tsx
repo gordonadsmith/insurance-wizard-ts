@@ -20,15 +20,20 @@ export const useWizardNavigation = (
 
   const { handleScroll, scrollToElement, scrollToTop, resetScrollState, triggerAutoScroll } = useAutoScroll();
 
-  // #3 fix: memoize getCurrentNode instead of calling .find() 15+ times in render
+  // Memoize getCurrentNode instead of calling .find() 15+ times in render
   const currentNode = useMemo(
     () => nodes.find(n => n.id === currentNodeId) || null,
     [nodes, currentNodeId]
   );
 
+  // Safely filter out ghost connections (edges pointing to nodes that no longer exist)
   const options = useMemo(
-    () => edges.filter(e => e.source === currentNodeId).map(e => ({ label: e.label || "Next", targetId: e.target })),
-    [edges, currentNodeId]
+    () => edges
+      .filter(e => e.source === currentNodeId)
+      // Ensure the target node actually exists in the nodes array before showing it
+      .filter(e => nodes.some(n => n.id === e.target))
+      .map(e => ({ label: e.label || "Next", targetId: e.target })),
+    [edges, currentNodeId, nodes]
   );
 
   const handleHistoryClick = useCallback((index: number): void => {
@@ -57,7 +62,7 @@ export const useWizardNavigation = (
     let historyData: any = { ...currentNode, selectedOption: label };
     
     if (currentNode.type === 'carrierNode' && selectedCarrierId) {
-      // Calculate safeCallType before saving to history
+      // Calculate safeCallType before saving to history to prevent ghost scripts
       const safeCallType = (selectedCallType && callTypes.includes(selectedCallType))
         ? selectedCallType
         : (currentNode.data.defaultCallType && callTypes.includes(currentNode.data.defaultCallType) 
