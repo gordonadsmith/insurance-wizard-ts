@@ -55,13 +55,23 @@ export const useWizardNavigation = (
   const handleOptionClick = useCallback((targetId: string, label: string): void => {
     if (!currentNode) return;
     let historyData: any = { ...currentNode, selectedOption: label };
+    
     if (currentNode.type === 'carrierNode' && selectedCarrierId) {
+      // Calculate safeCallType before saving to history
+      const safeCallType = (selectedCallType && callTypes.includes(selectedCallType))
+        ? selectedCallType
+        : (currentNode.data.defaultCallType && callTypes.includes(currentNode.data.defaultCallType) 
+            ? currentNode.data.defaultCallType 
+            : callTypes[0] || "Quote");
+
       historyData.carrierInfo = {
         ...carriers[selectedCarrierId],
-        selectedCallType: selectedCallType,
-        displayScript: carriers[selectedCarrierId].scripts?.[selectedCallType] || carriers[selectedCarrierId].script
+        selectedCallType: safeCallType,
+        // Use ?? instead of || to prevent ghost text in history
+        displayScript: carriers[selectedCarrierId].scripts?.[safeCallType] ?? carriers[selectedCarrierId].script
       };
     }
+    
     if (currentNode.type === 'checklistNode') {
       historyData.checklistAnswers = activeChecklistState[currentNode.id] || {};
     }
@@ -71,12 +81,13 @@ export const useWizardNavigation = (
         variables: madLibsValues[currentNode.id] || {}
       };
     }
+    
     setHistory(prev => [...prev, historyData]);
     setCurrentNodeId(targetId);
     setSelectedCarrierId(null);
-    setSelectedCallType("Quote");
+    setSelectedCallType(""); // Clear state; the IIFE in App.tsx will auto-resolve the correct default
     triggerAutoScroll();
-  }, [currentNode, selectedCarrierId, selectedCallType, carriers, activeChecklistState, madLibsValues, triggerAutoScroll]);
+  }, [currentNode, selectedCarrierId, selectedCallType, carriers, activeChecklistState, madLibsValues, triggerAutoScroll, callTypes]);
 
   const resetWizard = useCallback(() => {
     const start = nodes.find(n => n.data.isStart) || nodes.find(n => n.id === '1') || nodes[0];

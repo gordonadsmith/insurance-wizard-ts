@@ -1,12 +1,12 @@
-import React, { useState, useCallback, useEffect, useMemo, ChangeEvent } from 'react';
+import React, { useState, useCallback, useEffect, ChangeEvent } from 'react';
 import ReactFlow, { 
   addEdge, Background, Controls, useNodesState, useEdgesState,
-  Node, Edge, Connection
+  Connection
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import 'react-quill-new/dist/quill.snow.css';   
 import 'react-quill-new/dist/quill.bubble.css'; 
-import { Plus, RefreshCw, ChevronRight, Trash2, Save, Building2, X, DollarSign, Settings, Copy, Layers, Lock, Unlock, Edit, FolderOpen, ClipboardCheck, FolderCog, FileText, GitBranch } from 'lucide-react';
+import { Plus, RefreshCw, ChevronRight, Trash2, Save, Building2, DollarSign, Settings, Copy, Layers, Lock, Unlock, Edit, FolderOpen, ClipboardCheck, FolderCog, FileText, GitBranch } from 'lucide-react';
 import './App.css';
 
 // @ts-ignore - image import
@@ -47,15 +47,6 @@ export default function App() {
 
   const auth = useAuth();
   const wizard = useWizardNavigation(nodes, edges, carriers, callTypes);
-
-  useEffect(() => {
-    if (!nodes || nodes.length === 0) return;
-    if (wizard.currentNode?.type === 'carrierNode') {
-      const targetType = wizard.currentNode.data.defaultCallType || callTypes[0] || "Quote";
-      wizard.setSelectedCallType(targetType);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wizard.currentNodeId]);
 
   // ── Node Management ──────────────────────────────────────────────────────
 
@@ -324,32 +315,44 @@ export default function App() {
             }}>
               <div className="bubble-label" style={{color: TONES[selectedTone].textColor}}>{cn.data.label}</div>
               {cn.type === 'scriptNode' && <div className="bubble-text" style={{ color: TONES[selectedTone].textColor, width: '100%', minWidth: 0, wordWrap: 'break-word', overflowWrap: 'break-word', wordBreak: 'normal', whiteSpace: 'normal' }} dangerouslySetInnerHTML={{__html: cleanHTML(cn.data.toneScripts?.[selectedTone] || cn.data.text)}}></div>}
-              {cn.type === 'carrierNode' && (
-                <div style={{display:'flex', flexDirection:'column', gap:'12px'}}>
-                  <div>
-                    <label style={{fontSize:'12px', fontWeight:'bold', color:SLATE, display:'block', marginBottom:'6px'}}>Call Type:</label>
-                    <select style={{padding:'8px', borderRadius:'8px', border:`1px solid ${BORDER}`, fontSize:'14px', width:'100%'}} onChange={(e) => wizard.setSelectedCallType(e.target.value)} value={wizard.selectedCallType || cn.data.defaultCallType || callTypes[0] || "Quote"}>
-                      {callTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{fontSize:'12px', fontWeight:'bold', color:SLATE, display:'block', marginBottom:'6px'}}>Select Carrier:</label>
-                    <select style={{padding:'8px', borderRadius:'8px', border:`1px solid ${BORDER}`, fontSize:'14px', width:'100%'}} onChange={(e) => wizard.setSelectedCarrierId(e.target.value)} value={wizard.selectedCarrierId || ""}>
-                      <option value="" disabled>-- Choose Carrier --</option>
-                      {Object.values(carriers).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  </div>
-                  {wizard.selectedCarrierId && carriers[wizard.selectedCarrierId] && (
-                    <div style={{background:'white', padding:'12px', borderRadius:'8px', border:`2px solid #8b5cf6`}}>
-                      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px'}}>
-                        <div style={{fontWeight:'bold', color:'#8b5cf6', fontSize:'15px'}}>{carriers[wizard.selectedCarrierId].name}</div>
-                        <div style={{fontSize:'11px', background:'#8b5cf6', color:'white', padding:'4px 8px', borderRadius:'4px', fontWeight:'bold'}}>{wizard.selectedCallType}</div>
-                      </div>
-                      <div style={{fontSize:'13px', color:SLATE}} dangerouslySetInnerHTML={{__html: carriers[wizard.selectedCarrierId].scripts?.[wizard.selectedCallType] || carriers[wizard.selectedCarrierId].script || "<p><i>No script for this call type yet.</i></p>"}}></div>
+              {cn.type === 'carrierNode' && (() => {
+                // 1. Dynamically compute the valid call type to guarantee the dropdown and state match
+                const safeCallType = (wizard.selectedCallType && callTypes.includes(wizard.selectedCallType))
+                  ? wizard.selectedCallType
+                  : (cn.data.defaultCallType && callTypes.includes(cn.data.defaultCallType) ? cn.data.defaultCallType : callTypes[0] || "Quote");
+
+                return (
+                  <div style={{display:'flex', flexDirection:'column', gap:'12px'}}>
+                    <div>
+                      <label style={{fontSize:'12px', fontWeight:'bold', color:SLATE, display:'block', marginBottom:'6px'}}>Call Type:</label>
+                      <select 
+                        style={{padding:'8px', borderRadius:'8px', border:`1px solid ${BORDER}`, fontSize:'14px', width:'100%'}} 
+                        onChange={(e) => wizard.setSelectedCallType(e.target.value)} 
+                        value={safeCallType}
+                      >
+                        {callTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                      </select>
                     </div>
-                  )}
-                </div>
-              )}
+                    <div>
+                      <label style={{fontSize:'12px', fontWeight:'bold', color:SLATE, display:'block', marginBottom:'6px'}}>Select Carrier:</label>
+                      <select style={{padding:'8px', borderRadius:'8px', border:`1px solid ${BORDER}`, fontSize:'14px', width:'100%'}} onChange={(e) => wizard.setSelectedCarrierId(e.target.value)} value={wizard.selectedCarrierId || ""}>
+                        <option value="" disabled>-- Choose Carrier --</option>
+                        {Object.values(carriers).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    </div>
+                    {wizard.selectedCarrierId && carriers[wizard.selectedCarrierId] && (
+                      <div style={{background:'white', padding:'12px', borderRadius:'8px', border:`2px solid #8b5cf6`}}>
+                        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px'}}>
+                          <div style={{fontWeight:'bold', color:'#8b5cf6', fontSize:'15px'}}>{carriers[wizard.selectedCarrierId].name}</div>
+                          <div style={{fontSize:'11px', background:'#8b5cf6', color:'white', padding:'4px 8px', borderRadius:'4px', fontWeight:'bold'}}>{safeCallType}</div>
+                        </div>
+                        {/* 2. CRITICAL FIX: Use ?? instead of || so empty strings don't trigger the ghost script */}
+                        <div style={{fontSize:'13px', color:SLATE}} dangerouslySetInnerHTML={{__html: carriers[wizard.selectedCarrierId].scripts?.[safeCallType] ?? carriers[wizard.selectedCarrierId].script ?? "<p><i>No script for this call type yet.</i></p>"}}></div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               {cn.type === 'checklistNode' && <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>{wizard.renderChecklistItems(cn.data.items, wizard.activeChecklistState[cn.id], cn.id, true)}</div>}
               {cn.type === 'madLibsNode' && (
                 <div style={{display:'flex', flexDirection:'column', gap:'12px'}}>
