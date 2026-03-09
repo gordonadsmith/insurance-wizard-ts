@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactQuill from 'react-quill-new';
-import { Settings, X, CheckSquare, Layers, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Settings, X, CheckSquare, Layers, Trash2, ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
 import { SettingsManagerProps, QuoteSettings } from '../types';
 import { JERRY_PINK, SLATE, BORDER, TONES } from '../constants';
 
@@ -12,9 +12,28 @@ const SettingsManager: React.FC<SettingsManagerProps> = ({ isOpen, onClose, sett
   if (!isOpen) return null;
   
   const handleSave = () => { setSettings(localSettings); onClose(); };
-  const addCoverage = () => { const id = Date.now().toString(); setLocalSettings(prev => ({ ...prev, coverages: [...prev.coverages, { id, label: "New Field", hasInput: false, isPolicyLevel: false, format: "{label} with {value}" }] })); };
+  
+  const addCoverage = () => { 
+    const id = Date.now().toString(); 
+    setLocalSettings(prev => ({ ...prev, coverages: [...prev.coverages, { id, label: "New Field", hasInput: false, isPolicyLevel: false, format: "{label} with {value}" }] })); 
+  };
+  
   const removeCoverage = (id: string) => setLocalSettings(prev => ({ ...prev, coverages: prev.coverages.filter(c => c.id !== id) }));
+  
   const updateCoverage = (id: string, field: string, value: any) => setLocalSettings(prev => ({ ...prev, coverages: prev.coverages.map(c => c.id === id ? { ...c, [field]: value } : c) }));
+
+  // NEW: Function to swap items in the array
+  const moveCoverage = (index: number, direction: 'up' | 'down') => {
+    setLocalSettings(prev => {
+      const newCoverages = [...prev.coverages];
+      if (direction === 'up' && index > 0) {
+        [newCoverages[index], newCoverages[index - 1]] = [newCoverages[index - 1], newCoverages[index]];
+      } else if (direction === 'down' && index < newCoverages.length - 1) {
+        [newCoverages[index], newCoverages[index + 1]] = [newCoverages[index + 1], newCoverages[index]];
+      }
+      return { ...prev, coverages: newCoverages };
+    });
+  };
 
   return (
     <div style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.5)', zIndex:1100, display:'flex', alignItems:'center', justifyContent:'center'}}>
@@ -59,11 +78,18 @@ const SettingsManager: React.FC<SettingsManagerProps> = ({ isOpen, onClose, sett
           <div>
             <label style={{fontSize:'12px', fontWeight:'bold', color:'#999', display:'block', marginBottom:'8px'}}>QUOTE FIELDS (COVERAGES)</label>
             <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
-              {localSettings.coverages.map(c => (
+              {localSettings.coverages.map((c, index) => (
                 <div key={c.id} style={{display:'flex', flexDirection:'column', background:'#f9fafb', padding:'8px', borderRadius:'6px', border:`1px solid ${BORDER}`}}>
                   
                   {/* Main Coverage Controls */}
                   <div style={{display:'flex', gap:'8px', alignItems:'center', flexWrap:'wrap'}}>
+                    
+                    {/* NEW: Up/Down Arrows */}
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '2px'}}>
+                      <button onClick={() => moveCoverage(index, 'up')} disabled={index === 0} style={{color: index === 0 ? '#ccc' : SLATE, background:'none', border:'none', cursor: index === 0 ? 'default' : 'pointer', padding: '0', height: '14px'}} title="Move Up"><ArrowUp size={14}/></button>
+                      <button onClick={() => moveCoverage(index, 'down')} disabled={index === localSettings.coverages.length - 1} style={{color: index === localSettings.coverages.length - 1 ? '#ccc' : SLATE, background:'none', border:'none', cursor: index === localSettings.coverages.length - 1 ? 'default' : 'pointer', padding: '0', height: '14px'}} title="Move Down"><ArrowDown size={14}/></button>
+                    </div>
+
                     <div style={{flexGrow:1, minWidth:'150px'}}><input value={c.label} onChange={(e) => updateCoverage(c.id, 'label', e.target.value)} style={{width:'100%', padding:'6px', border:`1px solid ${BORDER}`, borderRadius:'4px'}} placeholder="Label"/></div>
                     <div style={{flexGrow:2, minWidth:'150px'}}><input value={c.format || ""} onChange={(e) => updateCoverage(c.id, 'format', e.target.value)} style={{width:'100%', padding:'6px', border:`1px solid ${BORDER}`, borderRadius:'4px'}} placeholder="{label} with {value}"/></div>
                     <div style={{display:'flex', gap:'8px', marginTop:'0px'}}>
