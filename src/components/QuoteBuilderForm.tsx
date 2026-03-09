@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, X, Copy, Layers } from 'lucide-react';
+import { X, Copy, Layers } from 'lucide-react';
 import { QuoteBuilderFormProps, Vehicle } from '../types';
 import { JERRY_PINK, JERRY_BG, SLATE, BORDER, DEFAULT_QUOTE_SETTINGS } from '../constants';
 import { cleanHTML } from '../utils/helpers';
@@ -7,7 +7,7 @@ import { cleanHTML } from '../utils/helpers';
 const QuoteBuilderForm: React.FC<QuoteBuilderFormProps> = ({ closingQuestion, settings = DEFAULT_QUOTE_SETTINGS, carriers = {}, selectedTone = 'neutral' }) => {
   const [downPayment, setDownPayment] = useState<string>("");
   const [monthly, setMonthly] = useState<string>("");
-  const [term, setTerm] = useState<string>("6-month");
+  const [term] = useState<string>("6-month");
   const [selectedCarrier, setSelectedCarrier] = useState<string>("");
   const [policyValues, setPolicyValues] = useState<Record<string, string>>({}); 
   const [policyChecks, setPolicyChecks] = useState<string[]>([]); 
@@ -31,12 +31,23 @@ const QuoteBuilderForm: React.FC<QuoteBuilderFormProps> = ({ closingQuestion, se
   const generateScript = () => {
     if (!downPayment || !monthly) return "<p><i>Enter pricing to generate script.</i></p>";
     const joinList = (l: any[]) => l.length === 0 ? "" : l.length === 1 ? l[0] : l.length === 2 ? `${l[0]} and ${l[1]}` : `${l.slice(0, -1).join(", ")}, and ${l.slice(-1)}`;
+    
     const formatItem = (cId: string, val: string) => {
       const conf = settings.coverages.find(s => s.id === cId);
       if (!conf) return "";
-      const fmt = conf.format || settings.coverageFormat || "{label} with {value}";
+      
+      // Default fallback format
+      let fmt = conf.format || settings.coverageFormat || "{label} with {value}";
+      
+      // NEW: Override with tone-specific coverage phrasing if one exists
+      if (selectedTone && selectedTone !== 'neutral' && conf.toneFormats?.[selectedTone] && conf.toneFormats[selectedTone].trim() !== '') {
+        fmt = conf.toneFormats[selectedTone];
+      }
+
       if (fmt.includes("{value}") && (!val || val.trim() === "")) return `<b>${conf.label}</b>`;
-      return fmt.replace("{label}", conf.label).replace("{value}", val || "");
+      
+      // Using global regex replacement to handle multiple occurrences if needed
+      return fmt.replace(/\{label\}/g, conf.label).replace(/\{value\}/g, val || "");
     };
 
     const policyItems = policyChecks.map(cId => formatItem(cId, policyValues[cId]));
@@ -51,10 +62,8 @@ const QuoteBuilderForm: React.FC<QuoteBuilderFormProps> = ({ closingQuestion, se
     const carrierName = carriers[selectedCarrier]?.name || "our partner";
     const dSym = downPayment.includes('$') ? '' : '$'; const mSym = monthly.includes('$') ? '' : '$';
     
-    // NEW: Pull the appropriate tone template, fallback to default neutral
     let baseTemplate = settings.template;
     if (selectedTone && selectedTone !== 'neutral' && settings.toneTemplates?.[selectedTone]) {
-      // Only use the custom tone if the admin actually typed something into it
       if (settings.toneTemplates[selectedTone].replace(/<[^>]*>/g, '').trim() !== '') {
         baseTemplate = settings.toneTemplates[selectedTone];
       }

@@ -7,6 +7,8 @@ export interface Coverage {
   placeholder?: string;
   isPolicyLevel: boolean;
   format: string;
+  // NEW: Store how this specific coverage is phrased per-tone
+  toneFormats?: Record<string, string>; 
 }
 
 export interface QuoteSettings {
@@ -72,7 +74,7 @@ export interface BaseNodeData {
   closingQuestion?: string;
   items?: string;
   template?: string;
-  toneTemplates?: Record<string, string>; // NEW: Added for MadLibs Tone Support
+  toneTemplates?: Record<string, string>;
   [key: string]: any;
 }
 
